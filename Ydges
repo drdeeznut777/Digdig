@@ -1,0 +1,156 @@
+--// SERVICES
+local Players = game:GetService("Players")
+local Workspace = game:GetService("Workspace")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local VirtualUser = game:GetService("VirtualUser")
+
+local player = Players.LocalPlayer
+
+--// ENV
+local env = getgenv and getgenv() or _G
+env.SqaysConfig = env.SqaysConfig or {}
+
+--// DEFAULTS
+local defaults = {
+    AutoHarvest = false,
+    HarvestSpeed = 0.2,
+    AutoRollTier = false,
+    TierSpeed = 0.2,
+    AntiAFK = false
+}
+
+for k,v in pairs(defaults) do
+    if env.SqaysConfig[k] == nil then
+        env.SqaysConfig[k] = v
+    end
+end
+
+--// CONSTANTS
+local WheatStage = "5"
+
+--// FUNCTIONS
+
+local function getFarm()
+    local gc = Workspace:FindFirstChild("__GAME_CONTENT")
+    return gc and gc:FindFirstChild("Farm")
+end
+
+local function harvest()
+    local farm = getFarm()
+    if not farm then return end
+
+    for _, crop in ipairs(farm:GetChildren()) do
+        local stage = crop:FindFirstChild("Stage")
+        if stage and tostring(stage.Value) ~= WheatStage then
+            continue
+        end
+
+        local cd = crop:FindFirstChildOfClass("ClickDetector")
+        if cd then
+            pcall(function()
+                fireclickdetector(cd)
+            end)
+        end
+    end
+end
+
+local function rollTier()
+    pcall(function()
+        local remote = ReplicatedStorage:FindFirstChild("Remotes")
+            and ReplicatedStorage.Remotes:FindFirstChild("RollTier")
+
+        if remote then
+            remote:FireServer()
+        end
+    end)
+end
+
+--// LOOPS (FULLY FIXED SYSTEM)
+
+task.spawn(function()
+    while true do
+        if env.SqaysConfig.AutoHarvest then
+            harvest()
+        end
+        task.wait(env.SqaysConfig.HarvestSpeed)
+    end
+end)
+
+task.spawn(function()
+    while true do
+        if env.SqaysConfig.AutoRollTier then
+            rollTier()
+        end
+        task.wait(env.SqaysConfig.TierSpeed)
+    end
+end)
+
+--// ANTI AFK
+
+local antiConnection
+
+local function setAntiAFK(state)
+    if antiConnection then
+        antiConnection:Disconnect()
+        antiConnection = nil
+    end
+
+    if state then
+        antiConnection = player.Idled:Connect(function()
+            VirtualUser:CaptureController()
+            VirtualUser:ClickButton2(Vector2.new())
+        end)
+    end
+end
+
+setAntiAFK(env.SqaysConfig.AntiAFK)
+
+--// UI (RAYFIELD)
+
+local Rayfield = loadstring(game:HttpGet("https://pastebin.com/raw/Ug2hwLEr"))()
+
+local Window = Rayfield:CreateWindow({
+    Name = "Sqays Hub (Fixed)",
+    LoadingTitle = "Loading...",
+    LoadingSubtitle = "by ChatGPT",
+    ConfigurationSaving = {Enabled = false}
+})
+
+local Tab = Window:CreateTab("Main")
+
+Tab:CreateToggle({
+    Name = "Auto Harvest",
+    CurrentValue = env.SqaysConfig.AutoHarvest,
+    Callback = function(v)
+        env.SqaysConfig.AutoHarvest = v
+    end
+})
+
+Tab:CreateSlider({
+    Name = "Harvest Speed",
+    Range = {0.05, 1},
+    Increment = 0.05,
+    CurrentValue = env.SqaysConfig.HarvestSpeed,
+    Callback = function(v)
+        env.SqaysConfig.HarvestSpeed = v
+    end
+})
+
+Tab:CreateToggle({
+    Name = "Auto Roll Tier",
+    CurrentValue = env.SqaysConfig.AutoRollTier,
+    Callback = function(v)
+        env.SqaysConfig.AutoRollTier = v
+    end
+})
+
+Tab:CreateToggle({
+    Name = "Anti AFK",
+    CurrentValue = env.SqaysConfig.AntiAFK,
+    Callback = function(v)
+        env.SqaysConfig.AntiAFK = v
+        setAntiAFK(v)
+    end
+})
+
+print("FULL SCRIPT LOADED (FIXED)")
