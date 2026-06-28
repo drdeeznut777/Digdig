@@ -1015,7 +1015,7 @@ SpeedTab:CreateDropdown({Name = "Exchange Gems Speed", Options = SpeedOptions, C
 -- Misc Tab
 local MiscTab = Window:CreateTab("Misc")
 
-MiscTab:CreateSection("Quests")
+MiscTab:CreateSection("Inf")
 
 MiscTab:CreateToggle({
     Name = "Inf Tickets",
@@ -1032,7 +1032,7 @@ MiscTab:CreateToggle({
 
             game:GetService("ReplicatedStorage").__Net.MainRemote:FireServer(unpack(args))
 
-            task.wait(0.5) -- adjust speed if needed
+            task.wait(0.01) -- adjust speed if needed
         end
     end
 })
